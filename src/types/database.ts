@@ -42,6 +42,7 @@ export interface User {
   name: string;
   phone?: string;
   phoneNumber?: string;
+  password?: string;
   role: UserRole;
   companyName?: string;
   vatNumber?: string;
@@ -57,6 +58,23 @@ export interface User {
     role: 'Admin' | 'Buyer' | 'Approver' | 'Viewer';
     spendingLimit: number;
   }[];
+}
+
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password?: string;
+  phone: string;
+  role: 'b2c' | 'b2b';
+  address: {
+    street: string;
+    postalCode: string;
+    city: string;
+    country: string;
+  };
+  companyName?: string;
+  vatNumber?: string;
+  sector?: string;
 }
 
 export type UserProfile = User;

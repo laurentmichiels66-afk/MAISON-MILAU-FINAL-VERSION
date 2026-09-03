@@ -295,6 +295,10 @@ export const EventsPage: React.FC<EventsPageProps> = ({ onNavigate }) => {
 
               <a
                 href="#event-quote-form"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('event-quote-form')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="w-full py-3 px-4 rounded-xl bg-[#2A1D17] hover:bg-[#432F23] text-white text-xs font-semibold block text-center transition-colors shadow-sm cursor-pointer mt-2"
               >
                 Vraag Vrijblijvende Eventofferte aan

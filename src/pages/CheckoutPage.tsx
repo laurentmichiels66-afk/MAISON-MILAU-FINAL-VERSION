@@ -20,6 +20,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Bancontact');
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [showMollieModal, setShowMollieModal] = useState(false);
+  const [paymentCancelledMessage, setPaymentCancelledMessage] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: currentUser.name || '',
@@ -135,6 +136,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
     if (success) {
       store.clearCart();
       onNavigate('/my-account?tab=orders');
+    } else {
+      setPaymentCancelledMessage(
+        'De Mollie betaling is nog niet voldaan. Uw bestelling en winkelmandje zijn veilig bewaard. U kunt de betaling op elk gewenst moment opnieuw starten.'
+      );
     }
   };
 
@@ -145,7 +150,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
         <MolliePaymentModal
           order={createdOrder}
           isOpen={showMollieModal}
-          onClose={() => setShowMollieModal(false)}
+          onClose={() => handlePaymentDone(false)}
           onPaymentComplete={handlePaymentDone}
         />
       )}
@@ -165,6 +170,24 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+        {paymentCancelledMessage && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+              <span>{paymentCancelledMessage}</span>
+            </div>
+            {createdOrder && (
+              <button
+                type="button"
+                onClick={() => setShowMollieModal(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-[#2A1D17] text-white font-semibold text-[11px] shrink-0 hover:bg-[#432F23] cursor-pointer"
+              >
+                Hervat Mollie Betaling
+              </button>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left Column: Delivery & Customer Info */}
           <div className="lg:col-span-7 space-y-8">

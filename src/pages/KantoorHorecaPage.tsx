@@ -253,6 +253,10 @@ export const KantoorHorecaPage: React.FC<KantoorHorecaPageProps> = ({ onNavigate
 
               <a
                 href="#b2b-form-section"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('b2b-form-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="w-full py-3 px-4 rounded-xl bg-[#2A1D17] hover:bg-[#432F23] text-white text-xs font-semibold block text-center transition-colors shadow-sm cursor-pointer mt-2"
               >
                 Vraag Offerte aan
@@ -312,7 +316,11 @@ export const KantoorHorecaPage: React.FC<KantoorHorecaPageProps> = ({ onNavigate
           <div className="pt-2">
             <a
               href="#b2b-form-section"
-              className="inline-flex items-center text-xs font-semibold text-[#C89B67] hover:text-white underline underline-offset-4"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('b2b-form-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center text-xs font-semibold text-[#C89B67] hover:text-white underline underline-offset-4 cursor-pointer"
             >
               Neem contact op voor White Label and custom roasting solutions →
             </a>

@@ -110,6 +110,12 @@ export default function App() {
                 />
               )}
               {currentPath === '/checkout' && <CheckoutPage onNavigate={navigate} />}
+              {currentPath === '/admin' && (
+                <MyAccountPage
+                  initialTab="admin_portal"
+                  onNavigate={navigate}
+                />
+              )}
               {currentPath === '/sitemap' && <SitemapPage onNavigate={navigate} />}
             </>
           )}
