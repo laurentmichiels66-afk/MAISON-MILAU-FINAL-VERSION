@@ -32,6 +32,8 @@ export interface CartItem {
 
 export interface StoreState {
   currentUser: User;
+  isAuthenticated: boolean;
+  registeredUsers: User[];
   cart: CartItem[];
   orders: Order[];
   invoices: Invoice[];
@@ -119,7 +121,7 @@ const defaultUser: User = {
   email: 'laurent.michiels66@gmail.com',
   name: 'Laurent Michiels',
   phoneNumber: '+32 (0)467 77 37 66',
-  role: 'b2c', // can toggle to 'b2b' or 'admin'
+  role: 'admin', // webbeheerder / owner
   createdAt: '2026-01-15T09:00:00Z',
   addresses: defaultAddresses,
   wishlistProductIds: ['selection-espresso', 'ba-moscatel', 'so-chelbesa'],
@@ -130,6 +132,35 @@ const defaultUser: User = {
     { id: 'sub-2', name: 'Marc Janssens', email: 'marc@demarkt.be', role: 'Approver', spendingLimit: 2000 },
   ],
 };
+
+const defaultRegisteredUsers: User[] = [
+  defaultUser,
+  {
+    id: 'usr-b2c-002',
+    email: 'klant@maisonmilau.be',
+    name: 'Anke De Smet',
+    phoneNumber: '+32 470 12 34 56',
+    role: 'b2c',
+    createdAt: '2026-02-10T10:00:00Z',
+    addresses: [defaultAddresses[0]],
+    wishlistProductIds: ['selection-espresso'],
+    loyaltyPoints: 120,
+  },
+  {
+    id: 'usr-b2b-003',
+    email: 'b2b@demarkt.be',
+    name: 'Brasserie De Markt BV',
+    phoneNumber: '+32 472 98 76 54',
+    role: 'b2b',
+    companyName: 'Brasserie De Markt & Co BV',
+    vatNumber: 'BE 0899.412.309',
+    createdAt: '2026-02-12T14:30:00Z',
+    addresses: [defaultAddresses[2]],
+    wishlistProductIds: ['prestige-gesha'],
+    loyaltyPoints: 450,
+    companyProfile: sampleCompanyProfile,
+  },
+];
 
 const initialOrders: Order[] = [
   {
@@ -302,7 +333,18 @@ function loadInitialState(): StoreState {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        ...parsed,
+        currentUser: parsed.currentUser || defaultUser,
+        isAuthenticated: typeof parsed.isAuthenticated === 'boolean' ? parsed.isAuthenticated : true,
+        registeredUsers: parsed.registeredUsers?.length ? parsed.registeredUsers : defaultRegisteredUsers,
+        cart: parsed.cart || [],
+        orders: parsed.orders || initialOrders,
+        invoices: parsed.invoices || initialInvoices,
+        subscriptions: parsed.subscriptions || initialSubscriptions,
+        b2bInquiries: parsed.b2bInquiries || [],
+        eventInquiries: parsed.eventInquiries || [],
+        appointments: parsed.appointments || [],
+        supportTickets: parsed.supportTickets || initialSupportTickets,
+        returnRequests: parsed.returnRequests || [],
         translations: { ...CONTENT_TRANSLATIONS, ...parsed.translations },
       };
     }
@@ -311,6 +353,8 @@ function loadInitialState(): StoreState {
   }
   return {
     currentUser: defaultUser,
+    isAuthenticated: true,
+    registeredUsers: defaultRegisteredUsers,
     cart: [],
     orders: initialOrders,
     invoices: initialInvoices,
@@ -346,7 +390,144 @@ export const store = {
     return () => listeners.delete(listener);
   },
 
-  // User & Roles
+  // User & Roles & Authentication
+  register(userData: {
+    name: string;
+    email: string;
+    password?: string;
+    role?: User['role'];
+    phone?: string;
+    companyName?: string;
+    vatNumber?: string;
+    address?: {
+      street: string;
+      number?: string;
+      postalCode: string;
+      city: string;
+      country?: string;
+    };
+  }): { success: boolean; user?: User; error?: string } {
+    const normalizedEmail = userData.email.trim().toLowerCase();
+    const existing = state.registeredUsers.find(
+      (u) => u.email.trim().toLowerCase() === normalizedEmail
+    );
+    if (existing) {
+      return {
+        success: false,
+        error: `Er bestaat reeds een account met het e-mailadres "${userData.email}". U kunt inloggen met uw bestaande gegevens.`,
+      };
+    }
+
+    const newUserId = `usr-${Date.now()}`;
+    const userAddresses: Address[] = userData.address
+      ? [
+          {
+            id: `addr-${Date.now()}`,
+            type: userData.role === 'b2b' ? 'Hoofdkantoor' : 'Thuis',
+            recipientName: userData.name,
+            street: userData.address.street,
+            number: userData.address.number || '',
+            postalCode: userData.address.postalCode,
+            city: userData.address.city,
+            country: userData.address.country || 'België',
+            isDefaultShipping: true,
+            isDefaultBilling: true,
+          },
+        ]
+      : [];
+
+    const newUser: User = {
+      id: newUserId,
+      email: normalizedEmail,
+      name: userData.name.trim(),
+      phoneNumber: userData.phone || '',
+      role: userData.role || 'b2c',
+      companyName: userData.companyName || (userData.role === 'b2b' ? userData.name : undefined),
+      vatNumber: userData.vatNumber,
+      createdAt: new Date().toISOString(),
+      addresses: userAddresses,
+      wishlistProductIds: [],
+      loyaltyPoints: 50, // Welcome points
+    };
+
+    if (userData.role === 'b2b' && userData.companyName) {
+      newUser.companyProfile = {
+        companyName: userData.companyName,
+        vatNumber: userData.vatNumber || '',
+        sector: 'Kantoor / Bedrijfsruimte',
+        contactPerson: userData.name,
+        phone: userData.phone || '',
+        email: normalizedEmail,
+        billingAddress: userAddresses[0] || defaultAddresses[0],
+        deliveryAddresses: userAddresses.length ? userAddresses : [defaultAddresses[0]],
+        approvedDiscountTier: 10,
+        paymentTerms: '14_days',
+        creditLimit: 1500,
+        openBalance: 0,
+        monthlyCoffeeVolumeKg: 10,
+        erpIntegrationStatus: 'Pending',
+        budgetAnnual: 5000,
+        budgetSpent: 0,
+      };
+    }
+
+    state = {
+      ...state,
+      registeredUsers: [newUser, ...state.registeredUsers],
+      currentUser: newUser,
+      isAuthenticated: true,
+    };
+    persistAndNotify();
+    return { success: true, user: newUser };
+  },
+
+  login(email: string, password?: string): { success: boolean; user?: User; error?: string } {
+    const normalizedEmail = email.trim().toLowerCase();
+    const foundUser = state.registeredUsers.find(
+      (u) => u.email.trim().toLowerCase() === normalizedEmail
+    );
+
+    if (!foundUser) {
+      return {
+        success: false,
+        error: `Geen geregistreerd account gevonden voor ${email}. Controleer uw gegevens of maak een nieuw account aan.`,
+      };
+    }
+
+    state = {
+      ...state,
+      currentUser: foundUser,
+      isAuthenticated: true,
+    };
+    persistAndNotify();
+    return { success: true, user: foundUser };
+  },
+
+  logout(): void {
+    state = {
+      ...state,
+      isAuthenticated: false,
+    };
+    persistAndNotify();
+  },
+
+  requestPasswordReset(email: string): { success: boolean; message: string } {
+    const normalizedEmail = email.trim().toLowerCase();
+    const foundUser = state.registeredUsers.find(
+      (u) => u.email.trim().toLowerCase() === normalizedEmail
+    );
+    if (!foundUser) {
+      return {
+        success: false,
+        message: `Geen geregistreerd account gevonden voor ${email}.`,
+      };
+    }
+    return {
+      success: true,
+      message: `Er is een e-mail met instructies om uw wachtwoord opnieuw in te stellen verstuurd naar ${email}. Controleer uw inbox.`,
+    };
+  },
+
   setUserRole(role: 'b2c' | 'b2b' | 'admin') {
     state = {
       ...state,

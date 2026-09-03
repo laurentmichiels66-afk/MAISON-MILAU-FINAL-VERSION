@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LanguageProvider } from './context/LanguageContext';
-import { isValidRoute, REGISTERED_ROUTES } from './config';
+import { isValidRoute, canonicalizeRoute, normalizePath } from './config';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
@@ -45,6 +45,19 @@ export default function App() {
   };
 
   const isRouteApproved = isValidRoute(currentPath);
+  const canonicalRoute = canonicalizeRoute(currentPath);
+  const normalized = normalizePath(currentPath);
+
+  // Determine initial account tab from query or path aliases
+  const activeAccountTab =
+    queryParams.get('tab') ||
+    (normalized === '/login' || normalized === '/inloggen'
+      ? 'login'
+      : normalized === '/register' || normalized === '/registreren' || normalized === '/registreer'
+      ? 'register'
+      : canonicalRoute === '/admin'
+      ? 'admin'
+      : 'orders');
 
   return (
     <LanguageProvider>
@@ -68,7 +81,7 @@ export default function App() {
 
         {/* Main Content View Container */}
         <main className="flex-grow">
-          {!isRouteApproved ? (
+          {!isRouteApproved || !canonicalRoute ? (
             <div className="max-w-2xl mx-auto px-4 py-24 text-center">
               <div className="w-16 h-16 rounded-full bg-red-100 text-red-700 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8" />
@@ -77,8 +90,7 @@ export default function App() {
                 Route Niet Gevonden (Validatie Fout)
               </h1>
               <p className="text-xs sm:text-sm text-[#786455] mb-6 leading-relaxed">
-                De opgevraagde route <code>"{currentPath}"</code> bestaat niet in de strikte sitemap van Maison Milau.
-                Conform het systeembeleid wordt deze route geblokkeerd en dient deze eerst in de sitemap te worden geconfigureerd.
+                De opgevraagde route <code>"{currentPath}"</code> bestaat niet in de sitemap van Maison Milau.
               </p>
               <button
                 onClick={() => navigate('/')}
@@ -90,27 +102,27 @@ export default function App() {
             </div>
           ) : (
             <>
-              {currentPath === '/' && <HomePage onNavigate={navigate} />}
-              {currentPath === '/webshop' && (
+              {canonicalRoute === '/' && <HomePage onNavigate={navigate} />}
+              {canonicalRoute === '/webshop' && (
                 <WebshopPage
                   initialCollection={queryParams.get('collection') || 'all'}
                   onNavigate={navigate}
                   onOpenCart={() => setIsCartOpen(true)}
                 />
               )}
-              {currentPath === '/kantoor-en-horeca' && <KantoorHorecaPage onNavigate={navigate} />}
-              {currentPath === '/events' && <EventsPage onNavigate={navigate} />}
-              {currentPath === '/over-ons' && <AboutPage onNavigate={navigate} />}
-              {currentPath === '/faq' && <FaqPage onNavigate={navigate} />}
-              {currentPath === '/afspraakplanner' && <AppointmentPage onNavigate={navigate} />}
-              {currentPath === '/my-account' && (
+              {canonicalRoute === '/kantoor-en-horeca' && <KantoorHorecaPage onNavigate={navigate} />}
+              {canonicalRoute === '/events' && <EventsPage onNavigate={navigate} />}
+              {canonicalRoute === '/over-ons' && <AboutPage onNavigate={navigate} />}
+              {canonicalRoute === '/faq' && <FaqPage onNavigate={navigate} />}
+              {canonicalRoute === '/afspraakplanner' && <AppointmentPage onNavigate={navigate} />}
+              {(canonicalRoute === '/my-account' || canonicalRoute === '/admin') && (
                 <MyAccountPage
-                  initialTab={queryParams.get('tab') || 'orders'}
+                  initialTab={activeAccountTab}
                   onNavigate={navigate}
                 />
               )}
-              {currentPath === '/checkout' && <CheckoutPage onNavigate={navigate} />}
-              {currentPath === '/sitemap' && <SitemapPage onNavigate={navigate} />}
+              {canonicalRoute === '/checkout' && <CheckoutPage onNavigate={navigate} />}
+              {canonicalRoute === '/sitemap' && <SitemapPage onNavigate={navigate} />}
             </>
           )}
         </main>

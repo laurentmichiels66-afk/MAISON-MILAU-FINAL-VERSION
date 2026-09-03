@@ -54,8 +54,8 @@ export const APP_CONFIG: AppConfig = {
   },
 };
 
-// Registered active routes to enforce: "Validate every link before rendering. If a route does not exist, show an error instead of creating one."
-export const REGISTERED_ROUTES = [
+// Canonical core routes
+export const CANONICAL_ROUTES = [
   '/',
   '/webshop',
   '/kantoor-en-horeca',
@@ -69,14 +69,94 @@ export const REGISTERED_ROUTES = [
   '/sitemap',
 ] as const;
 
-export type RegisteredRoute = (typeof REGISTERED_ROUTES)[number];
+export type CanonicalRoute = (typeof CANONICAL_ROUTES)[number];
+
+// Route aliases map pointing to their canonical destination
+export const ROUTE_ALIASES: Record<string, CanonicalRoute> = {
+  // Webshop aliases (e.g. https://www.maison-milau.be/products)
+  '/products': '/webshop',
+  '/producten': '/webshop',
+  '/shop': '/webshop',
+  '/koffie': '/webshop',
+
+  // Kantoor en horeca (B2B) aliases
+  '/kantoor': '/kantoor-en-horeca',
+  '/horeca': '/kantoor-en-horeca',
+  '/b2b': '/kantoor-en-horeca',
+  '/zakelijk': '/kantoor-en-horeca',
+
+  // Events & degustaties aliases
+  '/workshops': '/events',
+  '/degustaties': '/events',
+  '/verhuur': '/events',
+
+  // Over ons / about aliases
+  '/about': '/over-ons',
+  '/story': '/over-ons',
+  '/ons-verhaal': '/over-ons',
+
+  // FAQ aliases
+  '/veelgestelde-vragen': '/faq',
+  '/help': '/faq',
+  '/klantenservice': '/faq',
+
+  // Afspraakplanner & contact aliases (e.g. https://www.maison-milau.be/contact)
+  '/contact': '/afspraakplanner',
+  '/afspraak': '/afspraakplanner',
+  '/appointment': '/afspraakplanner',
+  '/book': '/afspraakplanner',
+
+  // Checkout aliases
+  '/afrekenen': '/checkout',
+  '/kassa': '/checkout',
+
+  // My Account & Auth aliases (e.g. https://www.maison-milau.be/account)
+  '/account': '/my-account',
+  '/mijn-account': '/my-account',
+  '/login': '/my-account',
+  '/inloggen': '/my-account',
+  '/register': '/my-account',
+  '/registreren': '/my-account',
+  '/registreer': '/my-account',
+  '/profiel': '/my-account',
+  '/profile': '/my-account',
+
+  // Admin aliases
+  '/beheer': '/admin',
+
+  // Sitemap aliases
+  '/sitemap.xml': '/sitemap',
+};
+
+// All registered valid routes (canonical + aliases)
+export const REGISTERED_ROUTES = [
+  ...CANONICAL_ROUTES,
+  ...Object.keys(ROUTE_ALIASES),
+];
+
+export type RegisteredRoute = string;
+
+export function normalizePath(path: string): string {
+  if (!path) return '/';
+  const clean = path.split('?')[0].split('#')[0];
+  const withoutLang = clean.replace(/^\/(nl|en|fr)(\/|$)/, '/');
+  const normalized = withoutLang.replace(/\/+$/, '') || '/';
+  return normalized;
+}
+
+export function canonicalizeRoute(path: string): CanonicalRoute | null {
+  const normalized = normalizePath(path);
+  if ((CANONICAL_ROUTES as readonly string[]).includes(normalized)) {
+    return normalized as CanonicalRoute;
+  }
+  if (normalized in ROUTE_ALIASES) {
+    return ROUTE_ALIASES[normalized];
+  }
+  return null;
+}
 
 export function isValidRoute(path: string): boolean {
-  // Strip query strings or hashes
-  const cleanPath = path.split('?')[0].split('#')[0];
-  // Support language prefixes like /nl/webshop, /en/webshop, /fr/webshop
-  const normalized = cleanPath.replace(/^\/(nl|en|fr)(\/|$)/, '/').replace(/\/$/, '') || '/';
-  return (REGISTERED_ROUTES as readonly string[]).includes(normalized);
+  return canonicalizeRoute(path) !== null;
 }
 
 export interface ConfigurationTodo {
