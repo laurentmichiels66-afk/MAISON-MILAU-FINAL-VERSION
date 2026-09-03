@@ -48,10 +48,6 @@ app.get('/api/config', (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
-});
-
 // 2. Authentication: Real Database Authentication Provider
 app.post('/api/auth/register', (req: Request, res: Response) => {
   const { email, password, name, role, companyName, vatNumber } = req.body;

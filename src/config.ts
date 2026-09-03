@@ -71,65 +71,12 @@ export const REGISTERED_ROUTES = [
 
 export type RegisteredRoute = (typeof REGISTERED_ROUTES)[number];
 
-// Common deep-link and user-friendly aliases that resolve directly to canonical pages
-export const ROUTE_ALIASES: Record<string, RegisteredRoute> = {
-  '/contact': '/over-ons',
-  '/contact-ons': '/over-ons',
-  '/contacteer-ons': '/over-ons',
-  '/about': '/over-ons',
-  '/overons': '/over-ons',
-  '/account': '/my-account',
-  '/mijn-account': '/my-account',
-  '/login': '/my-account',
-  '/aanmelden': '/my-account',
-  '/register': '/my-account',
-  '/registreren': '/my-account',
-  '/products': '/webshop',
-  '/producten': '/webshop',
-  '/shop': '/webshop',
-  '/koffie': '/webshop',
-  '/cart': '/checkout',
-  '/mandje': '/checkout',
-  '/winkelmandje': '/checkout',
-  '/b2b': '/kantoor-en-horeca',
-  '/horeca': '/kantoor-en-horeca',
-  '/kantoor': '/kantoor-en-horeca',
-  '/bedrijven': '/kantoor-en-horeca',
-  '/afspraak': '/afspraakplanner',
-  '/afspraken': '/afspraakplanner',
-  '/appointment': '/afspraakplanner',
-  '/appointments': '/afspraakplanner',
-  '/booking': '/afspraakplanner',
-  '/plan-afspraak': '/afspraakplanner',
-  '/proeverij': '/afspraakplanner',
-};
-
-/**
- * Normalizes an incoming browser pathname:
- * - Strips query strings and hashes
- * - Strips optional language prefixes (/nl/, /en/, /fr/)
- * - Strips trailing slashes
- * - Resolves aliases (e.g. /contact -> /over-ons, /products -> /webshop, /account -> /my-account)
- */
-export function resolveRoute(rawPath: string): { canonicalPath: RegisteredRoute | null; originalClean: string } {
-  if (!rawPath) return { canonicalPath: '/', originalClean: '/' };
-  const cleanPath = rawPath.split('?')[0].split('#')[0].trim().toLowerCase();
-  const normalized = cleanPath.replace(/^\/(nl|en|fr)(\/|$)/, '/').replace(/\/+$/, '') || '/';
-
-  if ((REGISTERED_ROUTES as readonly string[]).includes(normalized)) {
-    return { canonicalPath: normalized as RegisteredRoute, originalClean: normalized };
-  }
-
-  if (ROUTE_ALIASES[normalized]) {
-    return { canonicalPath: ROUTE_ALIASES[normalized], originalClean: normalized };
-  }
-
-  return { canonicalPath: null, originalClean: normalized };
-}
-
 export function isValidRoute(path: string): boolean {
-  const { canonicalPath } = resolveRoute(path);
-  return canonicalPath !== null;
+  // Strip query strings or hashes
+  const cleanPath = path.split('?')[0].split('#')[0];
+  // Support language prefixes like /nl/webshop, /en/webshop, /fr/webshop
+  const normalized = cleanPath.replace(/^\/(nl|en|fr)(\/|$)/, '/').replace(/\/$/, '') || '/';
+  return (REGISTERED_ROUTES as readonly string[]).includes(normalized);
 }
 
 export interface ConfigurationTodo {

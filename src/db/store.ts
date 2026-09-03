@@ -16,7 +16,6 @@ import {
   SupportTicket,
   ReturnRequest,
   B2BCompanyProfile,
-  RegisterPayload,
 } from '../types/database';
 
 const STORAGE_KEY = 'maison_milau_store_v1';
@@ -32,9 +31,7 @@ export interface CartItem {
 }
 
 export interface StoreState {
-  isAuthenticated: boolean;
   currentUser: User;
-  registeredUsers: User[];
   cart: CartItem[];
   orders: Order[];
   invoices: Invoice[];
@@ -305,18 +302,7 @@ function loadInitialState(): StoreState {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        isAuthenticated: typeof parsed.isAuthenticated === 'boolean' ? parsed.isAuthenticated : false,
-        currentUser: parsed.currentUser || defaultUser,
-        registeredUsers: parsed.registeredUsers && parsed.registeredUsers.length ? parsed.registeredUsers : [defaultUser],
-        cart: parsed.cart || [],
-        orders: parsed.orders || initialOrders,
-        invoices: parsed.invoices || initialInvoices,
-        subscriptions: parsed.subscriptions || initialSubscriptions,
-        b2bInquiries: parsed.b2bInquiries || [],
-        eventInquiries: parsed.eventInquiries || [],
-        appointments: parsed.appointments || [],
-        supportTickets: parsed.supportTickets || initialSupportTickets,
-        returnRequests: parsed.returnRequests || [],
+        ...parsed,
         translations: { ...CONTENT_TRANSLATIONS, ...parsed.translations },
       };
     }
@@ -324,9 +310,7 @@ function loadInitialState(): StoreState {
     console.warn('Could not read store from localStorage:', err);
   }
   return {
-    isAuthenticated: false, // Default requires sign-in or registration before entering private portal
     currentUser: defaultUser,
-    registeredUsers: [defaultUser],
     cart: [],
     orders: initialOrders,
     invoices: initialInvoices,
@@ -360,136 +344,6 @@ export const store = {
   subscribe(listener: () => void): () => void {
     listeners.add(listener);
     return () => listeners.delete(listener);
-  },
-
-  // Authentication & Registration
-  isAuthenticated(): boolean {
-    return state.isAuthenticated;
-  },
-
-  registerUser(payload: RegisterPayload): { success: boolean; error?: string; user?: User } {
-    if (!payload.name?.trim() || !payload.email?.trim()) {
-      return { success: false, error: 'Vul alstublieft uw naam en een geldig e-mailadres in.' };
-    }
-
-    const emailClean = payload.email.trim().toLowerCase();
-    const existing = state.registeredUsers.find(
-      (u) => u.email.toLowerCase() === emailClean
-    );
-    if (existing) {
-      return { success: false, error: 'Er bestaat al een Maison Milau account met dit e-mailadres. Gelieve in te loggen.' };
-    }
-
-    const newAddress: Address = {
-      id: `addr-${Date.now()}`,
-      type: payload.role === 'b2b' ? 'Werk' : 'Thuis',
-      recipientName: payload.name.trim(),
-      street: payload.address.street?.trim() || 'Jef Scheirsstraat 29',
-      postalCode: payload.address.postalCode?.trim() || '9200',
-      city: payload.address.city?.trim() || 'Oudegem',
-      country: payload.address.country?.trim() || 'België',
-      isDefaultShipping: true,
-      isDefaultBilling: true,
-    };
-
-    let companyProfile: B2BCompanyProfile | undefined;
-    if (payload.role === 'b2b') {
-      companyProfile = {
-        companyName: payload.companyName?.trim() || payload.name.trim(),
-        vatNumber: payload.vatNumber?.trim() || 'BE 1041.542.844',
-        sector: (payload.sector as any) || 'Kantoor / Bedrijfsruimte',
-        contactPerson: payload.name.trim(),
-        phone: payload.phone?.trim() || '+32 (0)467 77 37 66',
-        email: emailClean,
-        billingAddress: newAddress,
-        deliveryAddresses: [newAddress],
-        approvedDiscountTier: 15,
-        paymentTerms: '30_days',
-        creditLimit: 2500,
-        openBalance: 0,
-        monthlyCoffeeVolumeKg: 10,
-        erpIntegrationStatus: 'Connected (Accountable)',
-        budgetAnnual: 5000,
-        budgetSpent: 0,
-      };
-    }
-
-    const newUser: User = {
-      id: `usr-${Date.now().toString(36)}`,
-      name: payload.name.trim(),
-      email: emailClean,
-      phone: payload.phone?.trim() || '',
-      phoneNumber: payload.phone?.trim() || '',
-      password: payload.password,
-      role: payload.role,
-      companyName: payload.companyName?.trim(),
-      vatNumber: payload.vatNumber?.trim(),
-      createdAt: new Date().toISOString(),
-      addresses: [newAddress],
-      wishlistProductIds: [],
-      loyaltyPoints: 50, // Welcome gift points
-      companyProfile,
-    };
-
-    state = {
-      ...state,
-      registeredUsers: [...state.registeredUsers, newUser],
-      currentUser: newUser,
-      isAuthenticated: true,
-    };
-    persistAndNotify();
-    return { success: true, user: newUser };
-  },
-
-  loginUser(email: string, password?: string): { success: boolean; error?: string; user?: User } {
-    const cleanEmail = email.trim().toLowerCase();
-    const user = state.registeredUsers.find(
-      (u) => u.email.toLowerCase() === cleanEmail
-    );
-
-    if (!user) {
-      // Fallback for default demo user
-      if (cleanEmail === defaultUser.email.toLowerCase()) {
-        state = {
-          ...state,
-          currentUser: defaultUser,
-          isAuthenticated: true,
-        };
-        persistAndNotify();
-        return { success: true, user: defaultUser };
-      }
-      return { success: false, error: 'Geen account gevonden voor dit e-mailadres. Maak hieronder een nieuw account aan.' };
-    }
-
-    if (password && user.password && user.password !== password) {
-      return { success: false, error: 'Onjuist wachtwoord. Controleer uw invoer en probeer opnieuw.' };
-    }
-
-    state = {
-      ...state,
-      currentUser: user,
-      isAuthenticated: true,
-    };
-    persistAndNotify();
-    return { success: true, user };
-  },
-
-  loginDemoUser(role: 'b2c' | 'b2b' | 'admin' = 'b2c'): void {
-    const demo = { ...defaultUser, role };
-    state = {
-      ...state,
-      currentUser: demo,
-      isAuthenticated: true,
-    };
-    persistAndNotify();
-  },
-
-  logout(): void {
-    state = {
-      ...state,
-      isAuthenticated: false,
-    };
-    persistAndNotify();
   },
 
   // User & Roles

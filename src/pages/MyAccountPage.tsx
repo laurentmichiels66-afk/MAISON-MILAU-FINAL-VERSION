@@ -2,25 +2,9 @@
 // Complete customer portal for B2C, B2B and Admin role views
 
 import React, { useState, useEffect } from 'react';
-import {
-  User,
-  Package,
-  RefreshCw,
-  FileText,
-  MapPin,
-  Settings,
-  ShieldCheck,
-  CheckCircle2,
-  PauseCircle,
-  PlayCircle,
-  Plus,
-  Download,
-  ArrowRight,
-  LogOut,
-} from 'lucide-react';
+import { User, Package, RefreshCw, FileText, MapPin, Settings, ShieldCheck, CheckCircle2, PauseCircle, PlayCircle, Plus, Download, ArrowRight } from 'lucide-react';
 import { store } from '../db/store';
 import { Order, Subscription, UserProfile, B2BInquiry, EventInquiry, Appointment } from '../types/database';
-import { AccountAuthGate } from '../components/AccountAuthGate';
 
 interface MyAccountPageProps {
   initialTab?: string;
@@ -28,7 +12,6 @@ interface MyAccountPageProps {
 }
 
 export const MyAccountPage: React.FC<MyAccountPageProps> = ({ initialTab = 'orders', onNavigate }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(store.isAuthenticated());
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [user, setUser] = useState<UserProfile>(store.getState().currentUser);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -40,7 +23,6 @@ export const MyAccountPage: React.FC<MyAccountPageProps> = ({ initialTab = 'orde
   useEffect(() => {
     const update = () => {
       const state = store.getState();
-      setIsAuthenticated(state.isAuthenticated);
       setUser(state.currentUser);
       setOrders(state.orders.filter((o) => o.userId === state.currentUser.id || state.currentUser.role === 'admin'));
       setSubscriptions(state.subscriptions.filter((s) => s.userId === state.currentUser.id || state.currentUser.role === 'admin'));
@@ -56,19 +38,6 @@ export const MyAccountPage: React.FC<MyAccountPageProps> = ({ initialTab = 'orde
     const next = currentStatus === 'active' ? 'paused' : 'active';
     store.updateSubscriptionStatus(subId, next);
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="bg-[#FBF9F5] text-[#2A1D17] min-h-screen">
-        <AccountAuthGate
-          onSuccess={() => {
-            setIsAuthenticated(true);
-          }}
-          onNavigate={onNavigate}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="bg-[#FBF9F5] text-[#2A1D17] min-h-screen pb-24">
@@ -87,42 +56,26 @@ export const MyAccountPage: React.FC<MyAccountPageProps> = ({ initialTab = 'orde
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Quick role toggle for preview */}
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-[#D9CEBF] text-xs">
-              <span className="text-stone-500 font-medium">Toon rol:</span>
-              <button
-                onClick={() => store.setUserRole('b2c')}
-                className={`px-2 py-1 rounded font-semibold transition-colors cursor-pointer ${user.role === 'b2c' ? 'bg-[#2A1D17] text-white' : 'text-stone-600 hover:bg-stone-100'}`}
-              >
-                B2C
-              </button>
-              <button
-                onClick={() => store.setUserRole('b2b')}
-                className={`px-2 py-1 rounded font-semibold transition-colors cursor-pointer ${user.role === 'b2b' ? 'bg-[#8C6239] text-white' : 'text-stone-600 hover:bg-stone-100'}`}
-              >
-                B2B
-              </button>
-              <button
-                onClick={() => store.setUserRole('admin')}
-                className={`px-2 py-1 rounded font-semibold transition-colors cursor-pointer ${user.role === 'admin' ? 'bg-stone-800 text-white' : 'text-stone-600 hover:bg-stone-100'}`}
-              >
-                Beheerder
-              </button>
-            </div>
-
-            {/* Logout button */}
+          {/* Quick role toggle for preview */}
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-[#D9CEBF] text-xs">
+            <span className="text-stone-500 font-medium">Toon rol:</span>
             <button
-              id="btn-logout"
-              onClick={() => {
-                store.logout();
-                setIsAuthenticated(false);
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#D9CEBF] bg-white text-xs font-semibold text-[#7A6759] hover:text-[#2A1D17] hover:border-[#8C6239] transition-all cursor-pointer shadow-2xs"
-              title="Afmelden van klantenportaal"
+              onClick={() => store.setUserRole('b2c')}
+              className={`px-2 py-1 rounded font-semibold ${user.role === 'b2c' ? 'bg-[#2A1D17] text-white' : 'text-stone-600 hover:bg-stone-100'}`}
             >
-              <LogOut className="w-4 h-4 text-stone-500" />
-              <span>Uitloggen</span>
+              B2C
+            </button>
+            <button
+              onClick={() => store.setUserRole('b2b')}
+              className={`px-2 py-1 rounded font-semibold ${user.role === 'b2b' ? 'bg-[#8C6239] text-white' : 'text-stone-600 hover:bg-stone-100'}`}
+            >
+              B2B
+            </button>
+            <button
+              onClick={() => store.setUserRole('admin')}
+              className={`px-2 py-1 rounded font-semibold ${user.role === 'admin' ? 'bg-stone-800 text-white' : 'text-stone-600 hover:bg-stone-100'}`}
+            >
+              Beheerder
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LanguageProvider } from './context/LanguageContext';
-import { isValidRoute, resolveRoute, REGISTERED_ROUTES } from './config';
+import { isValidRoute, REGISTERED_ROUTES } from './config';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
@@ -17,38 +17,17 @@ import { SitemapPage } from './pages/SitemapPage';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
 export default function App() {
-  const getResolvedState = (rawPath: string): string => {
-    const { canonicalPath, originalClean } = resolveRoute(rawPath);
-    return canonicalPath || originalClean;
-  };
-
   const [currentPath, setCurrentPath] = useState<string>(() => {
-    let initial = typeof window !== 'undefined' ? window.location.pathname || '/' : '/';
-    if (typeof window !== 'undefined') {
-      try {
-        const savedRedirect = sessionStorage.getItem('spa_redirect_path');
-        if (savedRedirect) {
-          sessionStorage.removeItem('spa_redirect_path');
-          const [savedPath, savedQuery] = savedRedirect.split('?');
-          window.history.replaceState({}, '', savedRedirect);
-          initial = savedPath;
-        }
-      } catch {
-        // Ignore sessionStorage security restrictions
-      }
-    }
-    return getResolvedState(initial);
+    return window.location.pathname || '/';
   });
-
   const [queryParams, setQueryParams] = useState<URLSearchParams>(() => {
-    return typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    return new URLSearchParams(window.location.search);
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     const handlePopState = () => {
-      const pathname = window.location.pathname || '/';
-      setCurrentPath(getResolvedState(pathname));
+      setCurrentPath(window.location.pathname || '/');
       setQueryParams(new URLSearchParams(window.location.search));
     };
     window.addEventListener('popstate', handlePopState);
@@ -57,11 +36,10 @@ export default function App() {
 
   const navigate = (pathWithQuery: string) => {
     const [path, queryString] = pathWithQuery.split('?');
-    const resolved = getResolvedState(path || '/');
     const newSearch = queryString ? `?${queryString}` : '';
 
-    window.history.pushState({}, '', `${resolved}${newSearch}`);
-    setCurrentPath(resolved);
+    window.history.pushState({}, '', `${path}${newSearch}`);
+    setCurrentPath(path || '/');
     setQueryParams(new URLSearchParams(newSearch));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -132,12 +110,6 @@ export default function App() {
                 />
               )}
               {currentPath === '/checkout' && <CheckoutPage onNavigate={navigate} />}
-              {currentPath === '/admin' && (
-                <MyAccountPage
-                  initialTab="admin_portal"
-                  onNavigate={navigate}
-                />
-              )}
               {currentPath === '/sitemap' && <SitemapPage onNavigate={navigate} />}
             </>
           )}
