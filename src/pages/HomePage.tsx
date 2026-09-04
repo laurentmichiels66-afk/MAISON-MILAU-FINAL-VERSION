@@ -29,7 +29,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           </h1>
 
           <p className="text-base sm:text-xl text-[#5C4A3E] font-normal leading-relaxed max-w-2xl">
-            Ambachtelijk gebrande specialty koffies voor elke gelegenheid. Bij jou thuis, voor op kantoor,  in je horecazaak of exclusieve koffiecatering vour jouw tuinfeest.
+            Ambachtelijk gebrande specialty koffies voor elke gelegenheid. Bij jou thuis, voor op kantoor,  in je horecazaak of exclusieve koffiecatering voor jouw tuinfeest.
           </p>
 
           {/* Direct CTA links as specified */}
