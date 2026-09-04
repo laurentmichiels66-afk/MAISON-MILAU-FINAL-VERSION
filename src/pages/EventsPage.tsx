@@ -102,7 +102,7 @@ export const EventsPage: React.FC<EventsPageProps> = ({ onNavigate }) => {
           Events & Catering · Maison Milau
         </span>
         <h1 className="text-3xl sm:text-5xl font-serif font-bold text-[#2A1D17] tracking-tight">
-          Koffiecatering & Machineverhuur voor elk Event
+          Koffiecatering voor elk Event
         </h1>
         <p className="text-sm sm:text-base text-[#5C4A3E] mt-3 max-w-3xl leading-relaxed">
           Van intieme familiefeesten en trouwfeesten tot grootschalige bedrijfsevents en beurzen. Wij voorzien barista-kwaliteit koffie, professionele espressomachines en optioneel bediening ter plaatse.
